@@ -7,15 +7,10 @@ from telegram.ext import ContextTypes
 from agent.context_builder import build_context
 from agent.groq_client import generate_response
 from agent.prompt_builder import build_prompt
+from bot.utils import check_user
 from bot.voice import transcribe_voice
-from config import settings
 
 logger = logging.getLogger(__name__)
-
-
-def _check_user(update: Update) -> bool:
-    """Return True if the chat is from the authorized user."""
-    return update.effective_chat.id == settings.TELEGRAM_USER_ID
 
 
 async def _dispatch_message(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str) -> None:
@@ -53,7 +48,7 @@ async def _dispatch_message(update: Update, context: ContextTypes.DEFAULT_TYPE, 
 
 
 async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not _check_user(update):
+    if not check_user(update):
         return
 
     text = update.message.text or ""
@@ -116,7 +111,7 @@ async def handle_active_message(
 
 
 async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not _check_user(update):
+    if not check_user(update):
         return
 
     voice = update.message.voice

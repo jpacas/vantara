@@ -45,7 +45,9 @@ def update_conversation_state(telegram_id: int, new_state: str) -> None:
     with SessionLocal() as session:
         user = session.execute(
             select(UserState).where(UserState.telegram_id == telegram_id)
-        ).scalar_one()
+        ).scalar_one_or_none()
+        if user is None:
+            return  # user not found, nothing to update
         user.conversation_state = new_state
         session.commit()
 
@@ -54,7 +56,9 @@ def set_pause(telegram_id: int, until_date: datetime | None) -> None:
     with SessionLocal() as session:
         user = session.execute(
             select(UserState).where(UserState.telegram_id == telegram_id)
-        ).scalar_one()
+        ).scalar_one_or_none()
+        if user is None:
+            return  # user not found, nothing to update
         user.pause_until = until_date
         session.commit()
 

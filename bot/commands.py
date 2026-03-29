@@ -5,19 +5,14 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from agent.context_builder import build_context
-from config import settings
-from db.queries import create_user_state, get_user_state, set_pause
+from bot.utils import check_user
+from db.queries import create_user_state, get_user_state, set_pause, update_conversation_state
 
 logger = logging.getLogger(__name__)
 
 
-def _check_user(update: Update) -> bool:
-    """Return True if the chat is from the authorized user."""
-    return update.effective_chat.id == settings.TELEGRAM_USER_ID
-
-
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not _check_user(update):
+    if not check_user(update):
         return
 
     telegram_id = update.effective_chat.id
@@ -27,6 +22,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         if user is None:
             create_user_state(telegram_id)
+            update_conversation_state(telegram_id, "ONBOARDING_IN_PROGRESS")
             await update.message.reply_text(
                 "Bienvenido a Vantara. Soy tu agente de accountability personal.\n\n"
                 "Vamos a empezar con el onboarding. Cuéntame: ¿en qué proyectos estás "
@@ -38,8 +34,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             )
         else:
             await update.message.reply_text(
-                f"Estado actual: {user.conversation_state}. "
-                "Escríbeme para continuar."
+                "Hola de nuevo. Escríbeme para continuar."
             )
 
     except Exception as exc:
@@ -48,7 +43,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not _check_user(update):
+    if not check_user(update):
         return
 
     telegram_id = update.effective_chat.id
@@ -92,7 +87,7 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def pause_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not _check_user(update):
+    if not check_user(update):
         return
 
     telegram_id = update.effective_chat.id
@@ -119,7 +114,7 @@ async def pause_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             resume_date = pause_until.strftime("%d/%m/%Y")
             day_word = "día" if days == 1 else "días"
             await update.message.reply_text(
-                f"Pausado por {days} {day_word}(s). Retomo el {resume_date}."
+                f"Pausado por {days} {day_word}. Retomo el {resume_date}."
             )
 
     except Exception as exc:
@@ -128,7 +123,7 @@ async def pause_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def unblock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not _check_user(update):
+    if not check_user(update):
         return
 
     try:
@@ -144,7 +139,7 @@ async def unblock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def delegate_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not _check_user(update):
+    if not check_user(update):
         return
 
     try:
