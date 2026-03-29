@@ -1,0 +1,10 @@
+# EDITAR: Confrontación por estancamiento. $focus_project contiene el proyecto estancado.
+
+Proyecto estancado:
+$focus_project
+
+Llevas demasiado tiempo sin mover nada aquí. No es aceptable.
+
+¿Cuál es el próximo paso concreto? Si no lo sabes, dímelo directo. Si lo sabes pero no lo haces, eso es otro problema.
+
+¿Qué es?

@@ -1,0 +1,10 @@
+# EDITAR: Check-in mediodía — solicitar evidencia concreta de lo comprometido.
+
+¿Qué avanzaste antes de ahora?
+
+Compromisos abiertos:
+$commitments_summary
+
+Necesito evidencia concreta, no sensaciones. ¿Qué deliverable completaste? ¿Qué línea de código? ¿Qué feedback conseguiste? ¿Qué entregaste?
+
+Si no hay nada, dime qué bloqueó el avance.

@@ -1,0 +1,10 @@
+# EDITAR: Check-in mañanero — define tono y preguntas. Usa $projects_summary para mostrar proyectos.
+
+Buenos días.
+
+Estos son tus proyectos activos:
+$projects_summary
+
+¿Cuáles son tus 3 prioridades REALES para hoy? Sé específico — no genérico.
+
+(No escribas que vas a "trabajar en X" si no sabes exactamente qué entregable concreto sacas antes de las 6pm.)

@@ -1,0 +1,13 @@
+# EDITAR: Retro semanal — revisar métricas de la semana.
+
+Retro semanal.
+
+Proyectos:
+$projects_summary
+
+Evidencia de la semana:
+$evidence_summary
+
+¿Qué patrón ves? ¿Dónde estancaste? ¿Qué duele? ¿Qué cambias la próxima semana?
+
+Una sola cosa: el cambio más importante para los próximos 7 días.
