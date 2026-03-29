@@ -42,7 +42,7 @@ async def generate_response(
     Respuesta vacía: retorna mensaje de fallback.
     Cualquier otro error: loggear + retornar mensaje de fallback.
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     backoff_delays = [1, 2]
 
     for attempt, delay in enumerate(backoff_delays + [None], start=1):
@@ -55,7 +55,7 @@ async def generate_response(
                 return _FALLBACK_MESSAGE
             return text
 
-        except (groq.APITimeoutError, groq.RateLimitError) as exc:
+        except (groq.APIConnectionError, groq.APITimeoutError, groq.RateLimitError) as exc:
             if delay is not None:
                 logger.warning(
                     "Groq transient error on attempt %d (%s), retrying in %ds",

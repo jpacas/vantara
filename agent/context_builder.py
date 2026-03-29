@@ -23,7 +23,7 @@ async def build_context(telegram_id: int) -> dict:
     Retorna dict con:
       - user_state: dict con conversation_state, is_paused (bool), pause_until (str o None)
       - projects: lista de dicts, cada uno con todos los campos del proyecto + days_since_movement
-      - todays_commitments: lista de compromisos abiertos del día de hoy
+      - open_commitments: lista de compromisos abiertos
       - recent_evidence: lista de evidencias de los últimos 7 días
       - open_blockers: lista de bloqueadores activos
       - open_delegations: lista de delegaciones pendientes
@@ -31,7 +31,7 @@ async def build_context(telegram_id: int) -> dict:
     Si la DB falla, la excepción se propaga — el caller es quien notifica al usuario.
     Si no existe user_state para el telegram_id, retorna contexto vacío (no crashea).
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     # All DB calls are sync — run in executor to avoid blocking the event loop
     user_row = await loop.run_in_executor(None, get_user_state, telegram_id)
@@ -45,7 +45,7 @@ async def build_context(telegram_id: int) -> dict:
                 "pause_until": None,
             },
             "projects": [],
-            "todays_commitments": [],
+            "open_commitments": [],
             "recent_evidence": [],
             "open_blockers": [],
             "open_delegations": [],
@@ -62,7 +62,7 @@ async def build_context(telegram_id: int) -> dict:
     user_state_dict = {
         "conversation_state": user_row.conversation_state,
         "is_paused": is_paused,
-        "pause_until": pause_until.isoformat() if pause_until is not None else None,
+        "pause_until": pause_until.isoformat() if is_paused else None,
     }
 
     # Fetch projects and enrich with days_since_movement
@@ -88,7 +88,7 @@ async def build_context(telegram_id: int) -> dict:
 
     # Fetch commitments, evidence, blockers, delegations
     commitment_rows = await loop.run_in_executor(None, get_open_commitments, telegram_id)
-    todays_commitments = [
+    open_commitments = [
         {
             "id": c.id,
             "project_id": c.project_id,
@@ -137,7 +137,7 @@ async def build_context(telegram_id: int) -> dict:
     return {
         "user_state": user_state_dict,
         "projects": projects,
-        "todays_commitments": todays_commitments,
+        "open_commitments": open_commitments,
         "recent_evidence": recent_evidence,
         "open_blockers": open_blockers,
         "open_delegations": open_delegations,
