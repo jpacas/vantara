@@ -1,0 +1,10 @@
+python-telegram-bot[job-queue]==20.*
+pydantic-settings
+python-dotenv
+groq
+openai
+SQLAlchemy
+psycopg2-binary
+supabase
+pytest
+pytest-asyncio
