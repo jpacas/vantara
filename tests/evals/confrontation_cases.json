@@ -1,0 +1,76 @@
+[
+  {
+    "name": "proyecto estancado 5 dias",
+    "context": {
+      "project_name": "Zucarlink",
+      "days_since_movement": 5,
+      "last_commitment": "terminar landing",
+      "is_paused": false
+    },
+    "criteria": [
+      "menciona 'Zucarlink' por nombre",
+      "menciona '5 días' o número específico",
+      "tiene call to action concreto",
+      "menos de 60 palabras"
+    ]
+  },
+  {
+    "name": "proyecto estancado 10 dias sin excuse",
+    "context": {
+      "project_name": "Zucarlink",
+      "days_since_movement": 10,
+      "last_commitment": "ninguno registrado",
+      "is_paused": false
+    },
+    "criteria": [
+      "menciona '10 días' o número específico",
+      "tono directo sin suavizar",
+      "call to action específico o decisión requerida",
+      "menos de 60 palabras"
+    ]
+  },
+  {
+    "name": "proyecto con bloqueador declarado",
+    "context": {
+      "project_name": "Proyecto B",
+      "days_since_movement": 7,
+      "last_commitment": "reunión con cliente",
+      "is_paused": false,
+      "blocker": "Cliente no responde correos"
+    },
+    "criteria": [
+      "reconoce el bloqueador",
+      "propone acción alternativa",
+      "menos de 60 palabras"
+    ]
+  },
+  {
+    "name": "proyecto de baja prioridad estancado",
+    "context": {
+      "project_name": "Proyecto Secundario",
+      "days_since_movement": 14,
+      "priority": 3,
+      "last_commitment": "ninguno",
+      "is_paused": false
+    },
+    "criteria": [
+      "menciona el nombre del proyecto",
+      "cuestiona si merece atención ahora",
+      "pide decisión: activar, pausar o eliminar"
+    ]
+  },
+  {
+    "name": "usuario responde a confrontacion con excusa vaga",
+    "context": {
+      "project_name": "Zucarlink",
+      "days_since_movement": 6,
+      "user_excuse": "he estado muy ocupado",
+      "is_paused": false
+    },
+    "criteria": [
+      "no acepta la excusa",
+      "pide acción concreta en las próximas horas",
+      "menos de 60 palabras"
+    ]
+  }
+]
