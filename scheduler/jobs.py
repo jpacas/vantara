@@ -24,6 +24,9 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
+# NOTE: _is_paused and other sync DB calls (get_user_state, log_event, etc.) are called
+# directly on the event loop. For a single-user bot this is acceptable — DB round-trips
+# are fast (<10ms on Railway→Supabase). If extended to multiple users, wrap in run_in_executor.
 def _is_paused(user_id: int) -> bool:
     user = get_user_state(user_id)
     if user is None or user.pause_until is None:
@@ -44,6 +47,11 @@ async def morning_checkin_job(context: CallbackContext) -> None:
     try:
         if _is_paused(user_id):
             logger.info("morning_checkin_job: user is paused, skipping")
+            return
+
+        user = get_user_state(user_id)
+        if user is None or user.conversation_state != "ACTIVE":
+            logger.info("morning_checkin_job: user not in ACTIVE state, skipping")
             return
 
         checkin = create_checkin(user_id, "morning")
@@ -77,6 +85,11 @@ async def midday_checkin_job(context: CallbackContext) -> None:
             logger.info("midday_checkin_job: user is paused, skipping")
             return
 
+        user = get_user_state(user_id)
+        if user is None or user.conversation_state != "ACTIVE":
+            logger.info("midday_checkin_job: user not in ACTIVE state, skipping")
+            return
+
         checkin = create_checkin(user_id, "midday")
         if checkin is None:
             logger.info("midday_checkin_job: already sent today, skipping (dedup)")
@@ -106,6 +119,11 @@ async def evening_checkin_job(context: CallbackContext) -> None:
     try:
         if _is_paused(user_id):
             logger.info("evening_checkin_job: user is paused, skipping")
+            return
+
+        user = get_user_state(user_id)
+        if user is None or user.conversation_state != "ACTIVE":
+            logger.info("evening_checkin_job: user not in ACTIVE state, skipping")
             return
 
         checkin = create_checkin(user_id, "evening")
@@ -139,6 +157,11 @@ async def weekly_retro_job(context: CallbackContext) -> None:
             logger.info("weekly_retro_job: user is paused, skipping")
             return
 
+        user = get_user_state(user_id)
+        if user is None or user.conversation_state != "ACTIVE":
+            logger.info("weekly_retro_job: user not in ACTIVE state, skipping")
+            return
+
         checkin = create_checkin(user_id, "weekly")
         if checkin is None:
             logger.info("weekly_retro_job: already sent this week, skipping (dedup)")
@@ -170,7 +193,14 @@ async def stagnation_check_job(context: CallbackContext) -> None:
             logger.info("stagnation_check_job: user is paused, skipping")
             return
 
+        user = get_user_state(user_id)
+        if user is None or user.conversation_state != "ACTIVE":
+            logger.info("stagnation_check_job: user not in ACTIVE state, skipping")
+            return
+
         projects = get_active_projects(user_id)
+        # Build context once outside the loop to avoid N redundant DB fetches
+        ctx = await build_context(user_id)
 
         for proj in projects:
             try:
@@ -178,7 +208,6 @@ async def stagnation_check_job(context: CallbackContext) -> None:
                 if days is None or days <= 5:
                     continue
 
-                ctx = await build_context(user_id)
                 # Inject the stagnant project as focus so the confrontation is project-specific
                 ctx["focus_project"] = {
                     "id": proj.id,
