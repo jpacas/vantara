@@ -1,4 +1,5 @@
 python-telegram-bot[job-queue]~=20.0
+pytz~=2024.1
 pydantic-settings~=2.13
 groq~=0.13
 openai~=1.0
