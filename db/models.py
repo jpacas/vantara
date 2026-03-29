@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import (
     BigInteger,
@@ -76,7 +76,7 @@ class Checkin(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("user_state.telegram_id"), nullable=False)
     checkin_type: Mapped[str] = mapped_column(Text, nullable=False)
-    date: Mapped[datetime] = mapped_column(Date, server_default=func.current_date())
+    date: Mapped[date] = mapped_column(Date, server_default=func.current_date())
     bot_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     user_response: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(Text, default="pending")
