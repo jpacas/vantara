@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 from datetime import date, datetime
 
 from sqlalchemy import (
@@ -20,12 +19,6 @@ from config import settings
 
 engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, class_=Session, expire_on_commit=False)
-
-
-@contextmanager
-def get_db():
-    with SessionLocal() as session:
-        yield session
 
 
 class Base(DeclarativeBase):
@@ -91,7 +84,7 @@ class Commitment(Base):
     project_id: Mapped[int] = mapped_column(Integer, ForeignKey("projects.id"), nullable=False)
     checkin_id: Mapped[int] = mapped_column(Integer, ForeignKey("checkins.id"), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    due_date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
+    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     status: Mapped[str] = mapped_column(Text, default="open")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
@@ -127,7 +120,7 @@ class Delegation(Base):
     project_id: Mapped[int] = mapped_column(Integer, ForeignKey("projects.id"), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     delegated_to: Mapped[str | None] = mapped_column(Text, nullable=True)
-    follow_up_date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
+    follow_up_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     status: Mapped[str] = mapped_column(Text, default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 

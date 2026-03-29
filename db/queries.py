@@ -1,4 +1,5 @@
-from datetime import date, datetime, timedelta
+import math
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -23,9 +24,12 @@ from db.models import (
 
 def get_user_state(telegram_id: int) -> UserState | None:
     with SessionLocal() as session:
-        return session.execute(
+        result = session.execute(
             select(UserState).where(UserState.telegram_id == telegram_id)
         ).scalar_one_or_none()
+        if result is not None:
+            session.refresh(result)
+        return result
 
 
 def create_user_state(telegram_id: int) -> UserState:
@@ -62,28 +66,63 @@ def set_pause(telegram_id: int, until_date: datetime | None) -> None:
 
 def get_active_projects(user_id: int) -> list[Project]:
     with SessionLocal() as session:
-        result = session.execute(
+        results = session.execute(
             select(Project)
             .where(Project.user_id == user_id, Project.is_active == True)
             .order_by(Project.priority.asc())
         ).scalars().all()
-        return list(result)
+        for p in results:
+            session.refresh(p)
+        return list(results)
 
 
 def get_project_by_id(project_id: int) -> Project | None:
     with SessionLocal() as session:
-        return session.execute(
+        result = session.execute(
             select(Project).where(Project.id == project_id)
         ).scalar_one_or_none()
+        if result is not None:
+            session.refresh(result)
+        return result
 
 
-def create_project(user_id: int, name: str, priority: int, **kwargs) -> Project:
+def create_project(
+    user_id: int,
+    name: str,
+    priority: int,
+    why_it_matters: str | None = None,
+    objective: str | None = None,
+    current_state: str | None = None,
+    next_milestone: str | None = None,
+    next_action: str | None = None,
+    acceptable_evidence: str | None = None,
+) -> Project:
     with SessionLocal() as session:
-        project = Project(user_id=user_id, name=name, priority=priority, **kwargs)
+        project = Project(
+            user_id=user_id,
+            name=name,
+            priority=priority,
+            why_it_matters=why_it_matters,
+            objective=objective,
+            current_state=current_state,
+            next_milestone=next_milestone,
+            next_action=next_action,
+            acceptable_evidence=acceptable_evidence,
+        )
         session.add(project)
         session.commit()
         session.refresh(project)
         return project
+
+
+def update_project(project_id: int, **fields) -> None:
+    """Update project fields. E.g. update_project(id, current_state='...', progress_pct=50)"""
+    with SessionLocal() as session:
+        project = session.get(Project, project_id)
+        if project:
+            for key, value in fields.items():
+                setattr(project, key, value)
+            session.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -93,13 +132,16 @@ def create_project(user_id: int, name: str, priority: int, **kwargs) -> Project:
 
 def get_todays_checkin(user_id: int, checkin_type: str) -> Checkin | None:
     with SessionLocal() as session:
-        return session.execute(
+        result = session.execute(
             select(Checkin).where(
                 Checkin.user_id == user_id,
                 Checkin.checkin_type == checkin_type,
                 Checkin.date == date.today(),
             )
         ).scalar_one_or_none()
+        if result is not None:
+            session.refresh(result)
+        return result
 
 
 def create_checkin(user_id: int, checkin_type: str) -> Checkin | None:
@@ -120,22 +162,14 @@ def create_checkin(user_id: int, checkin_type: str) -> Checkin | None:
             return None
 
 
-def update_checkin_response(checkin_id: int, user_response: str) -> None:
+def update_checkin(checkin_id: int, **fields) -> None:
+    """Update any fields on a checkin. E.g. update_checkin(id, user_response='...', status='responded')"""
     with SessionLocal() as session:
-        checkin = session.execute(
-            select(Checkin).where(Checkin.id == checkin_id)
-        ).scalar_one()
-        checkin.user_response = user_response
-        session.commit()
-
-
-def update_checkin_status(checkin_id: int, status: str) -> None:
-    with SessionLocal() as session:
-        checkin = session.execute(
-            select(Checkin).where(Checkin.id == checkin_id)
-        ).scalar_one()
-        checkin.status = status
-        session.commit()
+        checkin = session.get(Checkin, checkin_id)
+        if checkin:
+            for key, value in fields.items():
+                setattr(checkin, key, value)
+            session.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -145,13 +179,15 @@ def update_checkin_status(checkin_id: int, status: str) -> None:
 
 def get_open_commitments(user_id: int) -> list[Commitment]:
     with SessionLocal() as session:
-        result = session.execute(
+        results = session.execute(
             select(Commitment).where(
                 Commitment.user_id == user_id,
                 Commitment.status == "open",
             )
         ).scalars().all()
-        return list(result)
+        for r in results:
+            session.refresh(r)
+        return list(results)
 
 
 def create_commitment(
@@ -175,21 +211,39 @@ def create_commitment(
         return commitment
 
 
+def fulfill_commitment(commitment_id: int) -> None:
+    with SessionLocal() as session:
+        commitment = session.get(Commitment, commitment_id)
+        if commitment:
+            commitment.status = 'fulfilled'
+            session.commit()
+
+
+def break_commitment(commitment_id: int) -> None:
+    with SessionLocal() as session:
+        commitment = session.get(Commitment, commitment_id)
+        if commitment:
+            commitment.status = 'broken'
+            session.commit()
+
+
 # ---------------------------------------------------------------------------
 # Evidence
 # ---------------------------------------------------------------------------
 
 
 def get_recent_evidence(user_id: int, days: int = 7) -> list[Evidence]:
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(tz=timezone.utc) - timedelta(days=days)
     with SessionLocal() as session:
-        result = session.execute(
+        results = session.execute(
             select(Evidence).where(
                 Evidence.user_id == user_id,
                 Evidence.recorded_at >= cutoff,
             )
         ).scalars().all()
-        return list(result)
+        for r in results:
+            session.refresh(r)
+        return list(results)
 
 
 def record_evidence(
@@ -224,8 +278,8 @@ def get_days_since_movement(project_id: int) -> int | None:
         ).scalar_one_or_none()
         if latest is None:
             return None
-        delta = datetime.utcnow() - latest
-        return delta.days
+        delta = datetime.now(tz=timezone.utc) - latest
+        return math.ceil(delta.total_seconds() / 86400)
 
 
 # ---------------------------------------------------------------------------
@@ -235,13 +289,15 @@ def get_days_since_movement(project_id: int) -> int | None:
 
 def get_open_blockers(user_id: int) -> list[Blocker]:
     with SessionLocal() as session:
-        result = session.execute(
+        results = session.execute(
             select(Blocker).where(
                 Blocker.user_id == user_id,
                 Blocker.is_resolved == False,
             )
         ).scalars().all()
-        return list(result)
+        for r in results:
+            session.refresh(r)
+        return list(results)
 
 
 def create_blocker(user_id: int, project_id: int, description: str) -> Blocker:
@@ -269,13 +325,15 @@ def resolve_blocker(blocker_id: int) -> None:
 
 def get_open_delegations(user_id: int) -> list[Delegation]:
     with SessionLocal() as session:
-        result = session.execute(
+        results = session.execute(
             select(Delegation).where(
                 Delegation.user_id == user_id,
                 Delegation.status == "pending",
             )
         ).scalars().all()
-        return list(result)
+        for r in results:
+            session.refresh(r)
+        return list(results)
 
 
 def create_delegation(
