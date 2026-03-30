@@ -1,4 +1,4 @@
-python-telegram-bot[job-queue]~=20.0
+python-telegram-bot[job-queue]==20.8
 pytz~=2024.1
 pydantic-settings~=2.13
 groq~=0.13
