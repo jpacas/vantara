@@ -149,27 +149,30 @@ async def _finalize_onboarding(
 
     try:
         # Extract structured project data from the conversation
-        extraction_prompt = """Extrae los proyectos capturados en esta conversación de onboarding.
+        extraction_prompt = """Extrae TODOS los proyectos capturados en esta conversación de onboarding — tanto los prioritarios como los "en el radar".
 Responde SOLO con un JSON array con este formato exacto, sin texto adicional:
 [
   {
     "name": "nombre del proyecto",
+    "is_priority": true,
     "why_it_matters": "por qué importa",
-    "objective": "objetivo concreto",
-    "current_state": "estado actual",
-    "next_action": "siguiente acción",
-    "acceptable_evidence": "qué cuenta como evidencia"
+    "objective": "objetivo final concreto",
+    "next_milestone": "próximo hito a completar",
+    "current_state": "estado actual y fases ya completadas",
+    "next_action": "siguiente acción concreta esta semana",
+    "acceptable_evidence": "qué cuenta como evidencia de avance"
   }
 ]
+Proyectos prioritarios: is_priority=true. Proyectos "en el radar" o no prioritarios: is_priority=false.
 Si algún campo no fue mencionado, usa null."""
 
         conversation_text = _format_history_for_prompt(history)
-        extraction_user_msg = f"Conversación:\n{conversation_text}\n\nExtrae los proyectos en JSON."
+        extraction_user_msg = f"Conversación:\n{conversation_text}\n\nExtrae todos los proyectos en JSON."
 
         raw_json = await generate_response(
             system_prompt=extraction_prompt,
             user_message=extraction_user_msg,
-            max_tokens=800,
+            max_tokens=1200,
             temperature=0.1,
         )
 
@@ -183,19 +186,29 @@ Si algún campo no fue mencionado, usa null."""
 
         projects = _json.loads(raw_json)
 
-        # Save projects with priority order
-        for i, proj in enumerate(projects, start=1):
-            if proj.get("name"):
-                create_project(
-                    user_id=telegram_id,
-                    name=proj["name"],
-                    priority=i,
-                    why_it_matters=proj.get("why_it_matters"),
-                    objective=proj.get("objective"),
-                    current_state=proj.get("current_state"),
-                    next_action=proj.get("next_action"),
-                    acceptable_evidence=proj.get("acceptable_evidence"),
-                )
+        # Save projects: priority ones first (lower priority number = higher priority)
+        priority_counter = 1
+        radar_counter = 100  # non-priority projects get high priority numbers
+        for proj in projects:
+            if not proj.get("name"):
+                continue
+            is_priority = proj.get("is_priority", True)
+            p_number = priority_counter if is_priority else radar_counter
+            if is_priority:
+                priority_counter += 1
+            else:
+                radar_counter += 1
+            create_project(
+                user_id=telegram_id,
+                name=proj["name"],
+                priority=p_number,
+                why_it_matters=proj.get("why_it_matters"),
+                objective=proj.get("objective"),
+                current_state=proj.get("current_state"),
+                next_milestone=proj.get("next_milestone"),
+                next_action=proj.get("next_action"),
+                acceptable_evidence=proj.get("acceptable_evidence"),
+            )
 
         # Transition to ACTIVE
         update_conversation_state(telegram_id, "ACTIVE")
