@@ -8,3 +8,4 @@ psycopg2-binary~=2.9
 supabase~=2.0
 pytest~=8.0
 pytest-asyncio~=0.25
+# force rebuild
