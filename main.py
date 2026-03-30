@@ -5,7 +5,7 @@ import pytz
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 from bot.commands import delegate_command, pause_command, start_command, status_command, unblock_command
-from bot.handlers import handle_text_message, handle_voice_message
+from bot.handlers import handle_document_message, handle_text_message, handle_voice_message
 from config import settings
 from scheduler.jobs import (
     evening_checkin_job,
@@ -36,6 +36,7 @@ def main() -> None:
     # Message handlers
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
     app.add_handler(MessageHandler(filters.VOICE, handle_voice_message))
+    app.add_handler(MessageHandler(filters.Document.FileExtension("txt"), handle_document_message))
 
     # Register scheduled jobs
     job_queue = app.job_queue

@@ -84,6 +84,7 @@ async def handle_onboarding_message(
     try:
         # Build context summary for the prompt variable
         ctx["conversation_summary"] = _format_history_for_prompt(history[:-1])  # exclude latest user msg
+        ctx["document_context"] = context.user_data.get("onboarding_document") or "No hay documento previo."
 
         system_prompt, _ = build_prompt("onboarding", ctx)
 
@@ -262,6 +263,66 @@ async def handle_active_message(
             exc_info=True,
         )
         await update.message.reply_text("Tuve un problema técnico. Intenta de nuevo.")
+
+
+async def handle_document_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """
+    Accepts a .txt file and uses it as context base for onboarding.
+    Stores content in context.user_data["onboarding_document"].
+    """
+    if not check_user(update):
+        return
+
+    doc = update.message.document
+    if not doc.file_name or not doc.file_name.lower().endswith(".txt"):
+        await update.message.reply_text("Solo acepto archivos .txt por ahora.")
+        return
+
+    # 200KB limit — enough for any personal brief
+    if doc.file_size and doc.file_size > 200 * 1024:
+        await update.message.reply_text(
+            "El archivo es muy grande. Máximo 200KB para archivos .txt."
+        )
+        return
+
+    file_path = f"/tmp/doc_{doc.file_id}.txt"
+    try:
+        tg_file = await context.bot.get_file(doc.file_id)
+        await tg_file.download_to_drive(file_path)
+
+        with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read().strip()
+
+        if not content:
+            await update.message.reply_text("El archivo está vacío.")
+            return
+
+        # Store for onboarding use
+        context.user_data["onboarding_document"] = content
+
+        await update.message.reply_text(
+            "Leí tu documento. Voy a usarlo como base para el onboarding — "
+            "te haré preguntas solo para completar o clarificar lo que necesite.\n\n"
+            "Escríbeme cualquier cosa para comenzar."
+        )
+
+        # If already in onboarding, reset history so it starts fresh with the doc
+        context.user_data.pop("onboarding_history", None)
+
+    except Exception as exc:
+        logger.error(
+            "Error handling document for user %d: %s",
+            update.effective_chat.id,
+            exc,
+            exc_info=True,
+        )
+        await update.message.reply_text("No pude leer el archivo. Intenta de nuevo.")
+    finally:
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except OSError:
+                pass
 
 
 async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

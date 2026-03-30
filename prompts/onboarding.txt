@@ -56,6 +56,12 @@ Cuando hayas capturado todos los proyectos (prioritarios y no prioritarios) y el
 Cuando el usuario confirme, responde con un mensaje de cierre de 2-3 líneas y termina con la etiqueta exacta en una línea nueva:
 [ONBOARDING_COMPLETO]
 
+## Documento de contexto del usuario
+
+El usuario puede haber enviado un documento previo con información sobre sus proyectos y objetivos. Si existe, úsalo como base — no preguntes lo que ya está ahí, solo confirma o profundiza.
+
+$document_context
+
 ## Contexto actual de la conversación
 
 $conversation_summary
