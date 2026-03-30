@@ -1,4 +1,19 @@
+# Secrets
 .env
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+.pytest_cache/
+
+# IDE / tools
 .claude/
+.vscode/
+.idea/
+
+# Planning & documentation (local only)
+PLAN.md
+TODOS.md
+Vantara.md
+CLAUDE.md
